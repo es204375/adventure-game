@@ -11,6 +11,7 @@
 # The third, print_welcome(), prints a welcome message centered in a given width.
 # The fourth, print_shop_menu(), prints an aligned menu with specified 
 # items and prices.
+# Part of a larger project.
 
 import random
 
