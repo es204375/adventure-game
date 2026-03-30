@@ -1,33 +1,41 @@
-import gamefunctions
+import gamefunctions as gf
 
 def main():
-    player_name = input("Enter your character's name: ")
-    print("\n--- Game Start ---")
-    gamefunctions.print_welcome(player_name, width=24)
+    """
+    The main driver for the game. Manages the high-level state 
+    and the primary game loop.
+    """
+    hp = 30
+    gold = 10
     
-    print("\nYou venture into the dark forest...")
-    monster = gamefunctions.new_random_monster()
-    print(f"A wild {monster['name']} appears!")
-    print(f"Description: {monster['description']}")
-    print(f"Stats: HP {monster['health']}, Power {monster['power']}")
+    hero_name = str(input("What is your name, brave hero? "))
+    gf.print_welcome(hero_name, 20)
 
-    print("\nYou find a mysterious traveling merchant.")
-    shop_error = gamefunctions.print_shop_menu("Health Pot", 15.00, "Iron Sword", 45.50)
-    
-    if isinstance(shop_error, str):
-        print(f"Merchant Error: {shop_error}")
+    # stay in town as long as you aren't passed out
+    while hp > 0:
+        print(f"\nYou are in town.")
+        print(f"Current HP: {hp}, Current Gold: {gold}")
+        print("What would you like to do?")
+        print("1) Leave town (Fight Monster)")
+        print("2) Sleep (Restore HP for 5 Gold)")
+        print("3) Quit")
 
-    player_gold = 100.00
-    item_cost = 15.00
-    quantity_desired = 3
-    
-    print(f"\nYou have ${player_gold:.2f}. You try to buy {quantity_desired} Health Pots.")
-    
-    bought, remaining_gold = gamefunctions.purchase_item(item_cost, player_gold, quantity_desired)
-    
-    print(f"Transaction complete!")
-    print(f"Items bought: {bought}")
-    print(f"Gold remaining: ${remaining_gold:.2f}")
+        # make sure input is correct
+        choice = gf.get_valid_input("> ", ["1", "2", "3"])
+
+        if choice == "1":
+            # enter the combat logic
+            hp, gold = gf.fight_monster(hp, gold)
+        elif choice == "2":
+            # attempt to heal
+            hp, gold = gf.sleep(hp, gold)
+        elif choice == "3":
+            print("Goodbye, traveler!")
+            break
+
+    # check if the loop ended because of health
+    if hp <= 0:
+        print("\nYour character has passed out. Game Over.")
 
 if __name__ == "__main__":
     main()
