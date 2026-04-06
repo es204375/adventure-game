@@ -1,6 +1,6 @@
 # gamefunctions.py
 # Elizabeth Sweeney
-# 3/1/26
+# 4/5/26
 # This program implements the two following functions:
 # The first, purchase_item(), takes the cost of an item and the starting
 # amount of money, and optionally the quantity to buy (default is 1). It
@@ -27,31 +27,6 @@ Typical usage example:
   items_bought, change = purchase_item(10.50, 50.00, quantityToPurchase=3)"""
 
 import random
-
-def purchase_item(itemPrice, startingMoney, quantityToPurchase=1):
-    """
-    Calculates the maximum number of items that can be bought with available funds.
-
-    Parameters:
-        itemPrice (float): The cost of a single item.
-        startingMoney (float): The total money the player currently possesses.
-        quantityToPurchase (int): The number of items the player wants to buy.
-
-    Returns:
-        tuple: A tuple containing (num_purchased, leftover_money).
-
-    Example:
-        >>> purchase_item(10, 50, 3)
-        (3, 20)
-    """
-    money = startingMoney
-    num_purchased = 0
-    # loop continues while money is left and more are required to be purchased
-    while (money >= itemPrice) and (quantityToPurchase > 0):
-        money -= itemPrice # cost is subtracted and quantity is ticked down while the number bought ticks up
-        quantityToPurchase -= 1
-        num_purchased += 1
-    return num_purchased, money
 
 def new_random_monster():
     """
@@ -112,7 +87,7 @@ def print_welcome(name, width=20):
 
 
 def print_shop_menu(item1Name, item1Price, item2Name, item2Price):
-    """
+    r"""
     Displays a formatted shop menu with two items and their prices.
 
     Parameters:
@@ -226,21 +201,192 @@ def fight_monster(hp, gold):
     
     return hp, gold
 
+def initialize_game(player_name):
+    """
+    Initializes the game state dictionary with starting stats and inventory.
+
+    Parameters:
+        player_name (str): The name of the player.
+
+    Returns:
+        dict: A dictionary containing player_name, player_hp, player_gold, and player_inventory.
+
+    Example:
+        >>> state = initialize_game("Jeff")
+        >>> print(state["player_gold"])
+        500
+    """
+    return {
+        "player_name": player_name,
+        "player_hp": 30,
+        "player_gold": 500,
+        "player_inventory": []
+    }
+
+def purchase_item(item_template, state):
+    """
+    Handles buying an item and updating the game state.
+
+    Parameters:
+        item_template (dict): A dictionary containing the item's stats and price.
+        state (dict): The current game state dictionary.
+
+    Returns:
+        bool: True if the purchase was successful, False otherwise.
+
+    Example:
+        >>> purchase_item({"name": "Sword", "price": 50}, state)
+        True
+    """
+    price = item_template["price"]
+    if state["player_gold"] >= price:
+        state["player_gold"] -= price
+        new_item = item_template.copy()
+        new_item.pop("price")
+        state["player_inventory"].append(new_item)
+        print(f"Purchased {new_item['name']}!")
+        return True
+    else:
+        print("Not enough gold!")
+        return False
+
+def equip_item(state, item_type):
+    """
+    Displays a filtered list of items and allows the user to equip one.
+
+    Parameters:
+        state (dict): The current game state dictionary.
+        item_type (str): The category of item to filter by (e.g., 'weapon').
+
+    Returns:
+        None
+
+    Example:
+        >>> equip_item(state, "weapon")
+        0) None/Unequip
+        1) Iron Sword (Equipped)
+    """
+    options = [item for item in state["player_inventory"] if item["type"] == item_type]
+    
+    if not options:
+        print(f"You have no {item_type}s to equip.")
+        return
+
+    print(f"\n--- Select a {item_type} to equip ---")
+    valid_indices = ["0"]
+    print("0) None/Unequip")
+    
+    for i, item in enumerate(options, 1):
+        status = "(Equipped)" if item.get("equipped") else ""
+        print(f"{i}) {item['name']} {status}")
+        valid_indices.append(str(i))
+
+    choice = int(get_valid_input("> ", valid_indices))
+
+    for item in state["player_inventory"]:
+        if item["type"] == item_type:
+            item["equipped"] = False
+
+    if choice > 0:
+        options[choice - 1]["equipped"] = True
+        print(f"Equipped {options[choice - 1]['name']}.")
+
+def fight_monster(state):
+    """
+    Combat logic, including durability loss and consumable item usage.
+
+    Parameters:
+        state (dict): The current game state dictionary.
+
+    Returns:
+        None
+
+    Example:
+        >>> fight_monster(state)
+        A wild Goblin appears!
+        Use 'Monster Bait' to skip fight? (y/n): 
+    """
+    monster = new_random_monster()
+    print(f"\nA wild {monster['name']} appears!")
+
+    for i, item in enumerate(state["player_inventory"]):
+        if item["type"] == "consumable" and item["name"] == "Monster Bait":
+            choice = get_valid_input("Use 'Monster Bait' to skip fight? (y/n): ", ["y", "n"])
+            if choice == "y":
+                state["player_inventory"].pop(i)
+                print(f"The {monster['name']} chased the bait away! You win!")
+                state["player_gold"] += monster['money']
+                return
+
+    m_hp = monster['health']
+    
+    while state["player_hp"] > 0 and m_hp > 0:
+        base_damage = 5
+        equipped_weapon = next((i for i in state["player_inventory"] if i.get("equipped") and i["type"] == "weapon"), None)
+        
+        current_damage = base_damage
+        if equipped_weapon:
+            current_damage += equipped_weapon["damage_boost"]
+
+        print(f"\n{monster['name']} HP: {m_hp} | Your HP: {state['player_hp']}")
+        choice = get_valid_input("1) Fight\n2) Run\n> ", ["1", "2"])
+
+        if choice == "1":
+            m_hp -= current_damage
+            state["player_hp"] -= monster['power']
+            print(f"You hit for {current_damage}!")
+            
+            if equipped_weapon:
+                equipped_weapon["currentDurability"] -= 1
+                if equipped_weapon["currentDurability"] <= 0:
+                    print(f"Your {equipped_weapon['name']} broke!")
+                    state["player_inventory"].remove(equipped_weapon)
+        else:
+            print("Escaped!")
+            return
+
+    if state["player_hp"] <= 0:
+        print("\nYou died.")
+    else:
+        print(f"Victory! Gained {monster['money']} gold.")
+        state["player_gold"] += monster['money']
+
 
 # function tests
 if __name__ == "__main__":
-    """ Purchase item function """
-    num_purchased, leftover_money = purchase_item(123, 1000, 3)
-    print(num_purchased)
-    print(leftover_money)
+    """ Initialize game function """
+    test_state = initialize_game("Jeff")
+    print(f"Name: {test_state['player_name']}")
+    print(f"Gold: {test_state['player_gold']}")
+    print(f"Inventory Count: {len(test_state['player_inventory'])}")
 
-    num_purchased, leftover_money = purchase_item(123, 201, 3)
-    print(num_purchased)
-    print(leftover_money)
+    """ New purchase item function """
+    # Define for testing
+    sword_template = {
+        "name": "Iron Sword", 
+        "type": "weapon", 
+        "price": 50, 
+        "damage_boost": 20, 
+        "maxDurability": 5, 
+        "currentDurability": 5, 
+        "equipped": False
+    }
+    bait_template = {
+        "name": "Monster Bait", 
+        "type": "consumable", 
+        "price": 30
+    }
 
-    num_purchased, leftover_money = purchase_item(3141, 2112)
-    print(num_purchased)
-    print(leftover_money)
+    # Test successful purchase
+    success = purchase_item(sword_template, test_state)
+    print(f"Purchase Sword (Success): {success}")
+    print(f"Remaining Gold: {test_state['player_gold']}")
+    print(f"First Item in Inventory: {test_state['player_inventory'][0]['name']}")
+
+    # Test purchase with insufficient funds
+    poor_state = {"player_gold": 5, "player_inventory": []}
+    success_fail = purchase_item(sword_template, poor_state)
+    print(f"Purchase expensive item with 5 gold (Success): {success_fail}")   
 
     """ New random monster function """
     my_monster = new_random_monster()
@@ -273,5 +419,7 @@ if __name__ == "__main__":
     print_shop_menu("Apple", 31, "Pear", 1.234)
     print_shop_menu("Egg", .23, "Bag of Oats", 12.34)
     print_shop_menu("Cheese", 17.48, "Cream", 5)
+
+
 
 
