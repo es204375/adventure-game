@@ -1,6 +1,6 @@
 # gamefunctions.py
 # Elizabeth Sweeney
-# 4/5/26
+# 4/12/26
 # This program implements the two following functions:
 # The first, purchase_item(), takes the cost of an item and the starting
 # amount of money, and optionally the quantity to buy (default is 1). It
@@ -27,6 +27,8 @@ Typical usage example:
   items_bought, change = purchase_item(10.50, 50.00, quantityToPurchase=3)"""
 
 import random
+import os
+import json
 
 def new_random_monster():
     """
@@ -351,13 +353,71 @@ def fight_monster(state):
         print(f"Victory! Gained {monster['money']} gold.")
         state["player_gold"] += monster['money']
 
+# savin and loadin
+def save_game(state, filename="savegame.json"):
+    """
+    Saves the state dictionary to a JSON file.
+    Parameters:
+        state (dict): The current game state dictionary containing player stats and inventory.
+        filename (str): The name of the file to create or overwrite.
+
+    Returns:
+        None
+
+    Example:
+        >>> save_game(state, "hero_save.json")
+        Game saved successfully to hero_save.json!
+    """
+    try:
+        with open(filename, 'w') as f:
+            json.dump(state, f, indent=4)
+        print(f"Game saved successfully to {filename}!")
+    except Exception as e:
+        print(f"Error saving game: {e}")
+
+def load_game(filename="savegame.json"):
+    """
+    Reads the JSON file and returns the state dictionary.
+    Parameters:
+        filename (str): The name of the save file to read.
+
+    Returns:
+        dict or None: The restored state dictionary if successful, None otherwise.
+
+    Example:
+        >>> loaded_state = load_game("hero_save.json")
+        Game loaded successfully!
+    """
+    if not os.path.exists(filename):
+        print("No save file found.")
+        return None
+    try:
+        with open(filename, 'r') as f:
+            state = json.load(f)
+        print("Game loaded successfully!")
+        return state
+    except Exception as e:
+        print(f"Error loading game: {e}")
+        return None
+
 
 # function tests
 if __name__ == "__main__":
     """ Initialize game function """
-    test_state = initialize_game("Jeff")
-    print(f"Name: {test_state['player_name']}")
-    print(f"Gold: {test_state['player_gold']}")
+    # Saving and loading test
+    choice = get_valid_input("1) New Game\n2) Load Game\n> ", ["1", "2"])
+    
+    if choice == "2":
+        state = load_game()
+        if not state:
+            print("Starting new game instead...")
+            name = input("Enter your name: ")
+            state = initialize_game(name)
+    else:
+        name = input("Enter your name: ")
+        state = initialize_game(name)
+
+    print_welcome(state["player_name"], 30)
     print(f"Inventory Count: {len(test_state['player_inventory'])}")
 
     """ New purchase item function """
