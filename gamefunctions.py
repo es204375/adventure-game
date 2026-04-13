@@ -402,26 +402,20 @@ def load_game(filename="savegame.json"):
 
 
 # function tests
-if __name__ == "__main__":
-    """ Initialize game function """
-    # Saving and loading test
+def main():
+    state = None 
     choice = get_valid_input("1) New Game\n2) Load Game\n> ", ["1", "2"])
     
     if choice == "2":
         state = load_game()
-        if not state:
-            print("Starting new game instead...")
-            name = input("Enter your name: ")
-            state = initialize_game(name)
-    else:
+    
+    if state is None:
         name = input("Enter your name: ")
         state = initialize_game(name)
 
     print_welcome(state["player_name"], 30)
-    print(f"Inventory Count: {len(test_state['player_inventory'])}")
-
-    """ New purchase item function """
-    # Define for testing
+    
+    # Test Item
     sword_template = {
         "name": "Iron Sword", 
         "type": "weapon", 
@@ -431,6 +425,7 @@ if __name__ == "__main__":
         "currentDurability": 5, 
         "equipped": False
     }
+
     bait_template = {
         "name": "Monster Bait", 
         "type": "consumable", 
@@ -438,17 +433,17 @@ if __name__ == "__main__":
     }
 
     # Test successful purchase
-    success = purchase_item(sword_template, test_state)
+    success = purchase_item(sword_template, state)
     print(f"Purchase Sword (Success): {success}")
-    print(f"Remaining Gold: {test_state['player_gold']}")
-    print(f"First Item in Inventory: {test_state['player_inventory'][0]['name']}")
+    print(f"Remaining Gold: {state['player_gold']}")
+    print(f"First Item in Inventory: {state['player_inventory'][0]['name']}")
 
     # Test purchase with insufficient funds
     poor_state = {"player_gold": 5, "player_inventory": []}
     success_fail = purchase_item(sword_template, poor_state)
     print(f"Purchase expensive item with 5 gold (Success): {success_fail}")   
 
-    """ New random monster function """
+    # Random monster test
     my_monster = new_random_monster()
     print(my_monster['name'])
     print(my_monster['description'])
@@ -470,16 +465,19 @@ if __name__ == "__main__":
     print(my_monster['power'])
     print(my_monster['money'])
 
-    """ Print welcome function """
+    # Welcome teset
     print_welcome("Audrey", 30)
     print_welcome("Tom", 40)
     print_welcome("Jane", 11)
 
-    """ Print shop menu function """
+    # Shop menu test
     print_shop_menu("Apple", 31, "Pear", 1.234)
     print_shop_menu("Egg", .23, "Bag of Oats", 12.34)
     print_shop_menu("Cheese", 17.48, "Cream", 5)
 
+    # Final status and save
+    print(f"Inventory Count: {len(state['player_inventory'])}")
+    save_game(state)
 
-
-
+if __name__ == "__main__":
+    main()
