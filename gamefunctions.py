@@ -222,7 +222,12 @@ def initialize_game(player_name):
         "player_name": player_name,
         "player_hp": 30,
         "player_gold": 500,
-        "player_inventory": []
+        "player_inventory": [],
+        "map_state": {
+            "player_pos": [0, 0], # Town location
+            "town_pos": [0, 0],
+            "monster_pos": [5, 5]
+        }
     }
 
 def purchase_item(item_template, state):
@@ -399,6 +404,60 @@ def load_game(filename="savegame.json"):
     except Exception as e:
         print(f"Error loading game: {e}")
         return None
+
+# movin and jamin
+
+def move_player(state, direction):
+    """
+    Updates the player's map position and returns the result of the move.
+    """
+    m_state = state["map_state"]
+    x, y = m_state["player_pos"]
+
+    if direction == "up" and y > 0: y -= 1
+    elif direction == "down" and y < 9: y += 1
+    elif direction == "left" and x > 0: x -= 1
+    elif direction == "right" and x < 9: x += 1
+    else: return "moved" # Hit a wall, stayed put
+
+    m_state["player_pos"] = [x, y]
+
+    if [x, y] == m_state["town_pos"]:
+        return "returned_to_town"
+    elif [x, y] == m_state["monster_pos"]:
+        return "monster_encounter"
+    
+    return "moved"
+
+def run_map_interface(state):
+    """
+    Text-based map interface. Returns "town" or "monster".
+    """
+    while True:
+        m_state = state["map_state"]
+        p_x, p_y = m_state["player_pos"]
+        
+        # Draw Map (Model-Interface Separation)
+        print("\n--- WORLD MAP ---")
+        for y in range(10):
+            row = ""
+            for x in range(10):
+                if [x, y] == [p_x, p_y]: row += "P "
+                elif [x, y] == m_state["town_pos"]: row += "T "
+                elif [x, y] == m_state["monster_pos"]: row += "M "
+                else: row += ". "
+            print(row)
+        
+        print("Controls: W(up), S(down), A(left), D(right) | Q(quit to town)")
+        move = input("> ").lower()
+        
+        direction = {"w": "up", "s": "down", "a": "left", "d": "right"}.get(move)
+        
+        if move == "q": return "town"
+        if direction:
+            result = move_player(state, direction)
+            if result == "returned_to_town": return "town"
+            if result == "monster_encounter": return "monster"
 
 
 # function tests

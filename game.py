@@ -1,41 +1,47 @@
 import gamefunctions as gf
+import random
 
 def main():
-    """
-    The main driver for the game. Manages the high-level state 
-    and the primary game loop.
-    """
-    hp = 30
-    gold = 10
+    print("1) New Game\n2) Load Game")
+    start_choice = gf.get_valid_input("> ", ["1", "2"])
     
-    hero_name = str(input("What is your name, brave hero? "))
-    gf.print_welcome(hero_name, 20)
+    state = gf.load_game() if start_choice == "2" else None
+    if state is None:
+        state = gf.initialize_game(input("What is your name, brave hero? "))
+    
+    gf.print_welcome(state["player_name"], 20)
 
-    # stay in town as long as you aren't passed out
-    while hp > 0:
-        print(f"\nYou are in town.")
-        print(f"Current HP: {hp}, Current Gold: {gold}")
-        print("What would you like to do?")
-        print("1) Leave town (Fight Monster)")
-        print("2) Sleep (Restore HP for 5 Gold)")
-        print("3) Quit")
-
-        # make sure input is correct
-        choice = gf.get_valid_input("> ", ["1", "2", "3"])
+    while state["player_hp"] > 0:
+        print(f"\nTown | HP: {state['player_hp']} | Gold: {state['player_gold']}")
+        print("1) Explore (Open Map)\n2) Sleep (5 Gold)\n3) Save\n4) Quit")
+        choice = gf.get_valid_input("> ", ["1", "2", "3", "4"])
 
         if choice == "1":
-            # enter the combat logic
-            hp, gold = gf.fight_monster(hp, gold)
+            # map Loop
+            while True:
+                map_result = gf.run_map_interface(state)
+                
+                if map_result == "monster":
+                    gf.fight_monster(state)
+                    # after fight, move monster to a new random spot
+                    state["map_state"]["monster_pos"] = [random.randint(0,9), random.randint(0,9)]
+                    # make sure the monster doesn't land on town
+                    if state["map_state"]["monster_pos"] == state["map_state"]["town_pos"]:
+                        state["map_state"]["monster_pos"] = [5, 5]
+                    
+                    if state["player_hp"] <= 0: break # exit map if dead
+                else:
+                    break # back to town menu
+
         elif choice == "2":
-            # attempt to heal
-            hp, gold = gf.sleep(hp, gold)
+            state["player_hp"], state["player_gold"] = gf.sleep(state["player_hp"], state["player_gold"])
         elif choice == "3":
-            print("Goodbye, traveler!")
+            gf.save_game(state)
+        elif choice == "4":
             break
 
-    # check if the loop ended because of health
-    if hp <= 0:
-        print("\nYour character has passed out. Game Over.")
+    if state["player_hp"] <= 0:
+        print("\nGame Over.")
 
 if __name__ == "__main__":
     main()
