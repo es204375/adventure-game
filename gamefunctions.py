@@ -29,6 +29,7 @@ Typical usage example:
 import random
 import os
 import json
+from WanderingMonster import WanderingMonster
 
 def new_random_monster():
     """
@@ -218,15 +219,17 @@ def initialize_game(player_name):
         >>> print(state["player_gold"])
         500
     """
+    m = WanderingMonster.random_spawn([], [(0,0)], 10, 10)
+    
     return {
         "player_name": player_name,
         "player_hp": 30,
         "player_gold": 500,
         "player_inventory": [],
+        "monsters": [m], # Store actual objects here
         "map_state": {
-            "player_pos": [0, 0], # Town location
-            "town_pos": [0, 0],
-            "monster_pos": [5, 5]
+            "player_pos": [0, 0],
+            "town_pos": [0, 0]
         }
     }
 
@@ -328,7 +331,7 @@ def fight_monster(state):
     m_hp = monster['health']
     
     while state["player_hp"] > 0 and m_hp > 0:
-        base_damage = 5
+        base_damage = 20
         equipped_weapon = next((i for i in state["player_inventory"] if i.get("equipped") and i["type"] == "weapon"), None)
         
         current_damage = base_damage
@@ -374,9 +377,12 @@ def save_game(state, filename="savegame.json"):
         Game saved successfully to hero_save.json!
     """
     try:
+        save_data = state.copy()
+        save_data["monsters"] = [m.to_dict() for m in state["monsters"]]
+        
         with open(filename, 'w') as f:
-            json.dump(state, f, indent=4)
-        print(f"Game saved successfully to {filename}!")
+            json.dump(save_data, f, indent=4)
+        print(f"Game saved successfully!")
     except Exception as e:
         print(f"Error saving game: {e}")
 
@@ -394,13 +400,13 @@ def load_game(filename="savegame.json"):
         Game loaded successfully!
     """
     if not os.path.exists(filename):
-        print("No save file found.")
         return None
     try:
         with open(filename, 'r') as f:
-            state = json.load(f)
-        print("Game loaded successfully!")
-        return state
+            data = json.load(f)
+        # Reconstruct monster objects
+        data["monsters"] = [WanderingMonster.from_dict(m) for m in data["monsters"]]
+        return data
     except Exception as e:
         print(f"Error loading game: {e}")
         return None
@@ -418,14 +424,13 @@ def move_player(state, direction):
     elif direction == "down" and y < 9: y += 1
     elif direction == "left" and x > 0: x -= 1
     elif direction == "right" and x < 9: x += 1
-    else: return "moved" # Hit a wall, stayed put
+    else: return "moved" # Hit a wall
 
     m_state["player_pos"] = [x, y]
 
+    # Check for town only; monster collisions are now handled in run_map_interface
     if [x, y] == m_state["town_pos"]:
         return "returned_to_town"
-    elif [x, y] == m_state["monster_pos"]:
-        return "monster_encounter"
     
     return "moved"
 
@@ -434,30 +439,62 @@ def run_map_interface(state):
     Text-based map interface. Returns "town" or "monster".
     """
     while True:
-        m_state = state["map_state"]
-        p_x, p_y = m_state["player_pos"]
+        p_x, p_y = state["map_state"]["player_pos"]
+        monsters = state["monsters"]
         
-        # Draw Map (Model-Interface Separation)
+        # 1. Render Map
         print("\n--- WORLD MAP ---")
         for y in range(10):
             row = ""
             for x in range(10):
+                monster_here = any(m.x == x and m.y == y for m in monsters)
                 if [x, y] == [p_x, p_y]: row += "P "
-                elif [x, y] == m_state["town_pos"]: row += "T "
-                elif [x, y] == m_state["monster_pos"]: row += "M "
+                elif [x, y] == state["map_state"]["town_pos"]: row += "T "
+                elif monster_here: row += "M "
                 else: row += ". "
             print(row)
         
-        print("Controls: W(up), S(down), A(left), D(right) | Q(quit to town)")
-        move = input("> ").lower()
+        # 2. Input
+        print("Controls: W,S,A,D | Q(quit)")
+        move_input = input("> ").lower()
+        if move_input == "q": return "town"
         
-        direction = {"w": "up", "s": "down", "a": "left", "d": "right"}.get(move)
-        
-        if move == "q": return "town"
+        direction = {"w": "up", "s": "down", "a": "left", "d": "right"}.get(move_input)
         if direction:
-            result = move_player(state, direction)
-            if result == "returned_to_town": return "town"
-            if result == "monster_encounter": return "monster"
+            # Move Player
+            move_player(state, direction)
+            p_pos = tuple(state["map_state"]["player_pos"])
+            
+            # 3. Check Combat (Player stepped on monster)
+            for m in monsters[:]: # Use slice to allow removing from list
+                if (m.x, m.y) == p_pos:
+                    fight_monster(state)
+                    monsters.remove(m)
+            
+            # 4. Move Monsters
+            town_pos = tuple(state["map_state"]["town_pos"])
+            for m in monsters:
+                # Other monsters' positions are occupied
+                occupied = [(other.x, other.y) for other in monsters if other != m]
+                # Player and Town are forbidden
+                forbidden = [p_pos, town_pos]
+                m.move(occupied, forbidden, 10, 10)
+                
+                # Check Combat again (Monster stepped on player)
+                if (m.x, m.y) == p_pos:
+                    fight_monster(state)
+                    monsters.remove(m)
+
+            # 5. Respawn Logic
+            if not monsters:
+                for _ in range(2):
+                    occ = [(m.x, m.y) for m in monsters]
+                    forb = [p_pos, town_pos]
+                    new_m = WanderingMonster.random_spawn(occ, forb, 10, 10)
+                    monsters.append(new_m)
+            
+            if state["player_hp"] <= 0: return "dead"
+            if list(p_pos) == state["map_state"]["town_pos"]: return "town"
 
 
 # function tests
