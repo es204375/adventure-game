@@ -1,10 +1,9 @@
 import random
 
+class WanderingMonster:
     """
     A class representing a monster that moves independently on the game grid.
     """
-
-class WanderingMonster:
     def __init__(self, x, y, monster_type, color, hp):
         """
         Initializes a new WanderingMonster instance.
@@ -96,7 +95,7 @@ class WanderingMonster:
 
     def move(self, occupied, forbidden, grid_w, grid_h):
         """
-        Attempts to move 1 space in a random direction.
+        Attempts to move 1 space in a random direction 75% of the time.
 
         Parameters:
             occupied (list): Positions of other monsters to avoid.
@@ -111,6 +110,8 @@ class WanderingMonster:
             >>> monster.move([], [(0,0)], 10, 10)
             True
         """
+        if random.randint(1,100) > 75:
+            return False # don't move
         directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
         random.shuffle(directions)
 

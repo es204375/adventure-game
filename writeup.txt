@@ -1,0 +1,40 @@
+# Elizabeth Sweeney
+# 5/03/26
+
+# Initial broad goals
+1) Add more graphics
+2) Expand the map somehow
+3) Make fights less basic
+
+# Specification of goals
+1) I didn't want to add in pygames. I intially messed with it a bit but I liked the text and
+terminal based game and wanted to keep it sort of retro. At first I wanted to add in like a
+sword swinging animation, but because I was keeping it in the terminal I decided an old-school
+style line-by-line animation would fit better.
+2) I didn't really want to make the map bigger, but obviously the game was pretty boring as is.
+So, instead of adding more buildings I decided to add POIs (points of interest) which in this
+case are chests.
+3) The fights were sort of unbalanced. This wasn't a major goal but I wanted to fix this and
+add better chances for the player to win. To do this I added items to the actual game loop 
+and I added items to the POI chests that helped. I also fixed monster movement and balanced
+some damage and health values for players and monsters.
+
+# Assessment
+- What whent well?
+I think the graphics actually look pretty cool. Also I got the game to be a little fairer I
+feel although still challenging. I also cleaned up a lot of the code. 
+- What challenges did you face? How'd you overcome them?
+I wanted to actually have the graphics be animated but I couldn't find an effective way of
+making that work in the terminal. I ended up going for more classic line-by-line style instead.
+I actually had a difficult time getting the POIs to work the way I wanted and ended up employing
+outside help. Even though it's a really similar coordinate system I just kept getting errors.
+I spent a pretty long time trying to get the items to work between game and gamefunctions. The
+code already existed in gamefunctions.py but I was struggling to make it work in game.py. This
+ended up being really basic syntax errors but it did give me trouble.
+- What would you do with more time?
+Although I do really like the ASCII, text-based, terminal game, I think I would like to use
+pygames in the future. When researching it it looked really cool but just not what I had
+in mind or the time for at the time. I also would add more items, more POI variety, and more
+locations and add art to go with it.
+
+

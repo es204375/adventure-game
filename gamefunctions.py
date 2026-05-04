@@ -14,7 +14,63 @@ greetings to the console.
 import random
 import os
 import json
+import time
+import sys
 from WanderingMonster import WanderingMonster
+
+def print_title_animation():
+    """
+    Displays the game title as an animation!!!
+    """
+    title = [
+        r"  ,---.  ,------.,--.   ,--.,------.,--.  ,--.,--------.,--. ,--.,------. ,------. ",
+        r" /  O  \ |  .-.  \\  `.'  / |  .---'|  ,'.|  |'--.  .--'|  | |  ||  .--. '|  .---' ",
+        r"|  .-.  ||  |  \  :\     /  |  `--, |  |' '  |   |  |   |  | |  ||  '--'.'|  `--,  ",
+        r"|  | |  ||  '--'  / \   /   |  `---.|  | `   |   |  |   '  '-'  '|  |\  \ |  `---. ",
+        r"`--' `--'`-------'   `-'    `------'`--'  `--'   `--'    `-----' `--' '--'`------' "
+    ]
+    
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("\n" * 2)
+    for line in title:
+        print(f"{line:^80}")
+        time.sleep(0.3)     
+    print("\n" + "="*80 + "\n")
+    time.sleep(0.5)
+
+def print_POI_animation():
+    """
+    Displays art for finding a POI.
+    """
+    poi_art = [
+        r"*******************************************************************************",
+        r"          |                   |                  |                     |",
+        r" _________|________________.=''_;=.______________|_____________________|_______",
+        r"|                   |  ,-'._,=''      `'=.|                  |",
+        r"|___________________|__'=._o`'-._        `'=.______________|___________________",
+        r"          |                 `'=._o`'=._      _`'=._                     |",
+        r" _________|_____________________:=._o '=._.'_.-='' '=.__________________|_______",
+        r"|                   |    __.--' , ; `'=._o.' ,-'''-._ '.   |",
+        r"|___________________|_._'  ,. .` ` `` ,  `'-._'-._   '. '__|___________________",
+        r"          |           |o`'=._` , ' ` `; .'. ,  '-._'-._; ;               |",
+        r" _________|___________| ;`-.o`'=._; .' ` '' .'\` . '-._ /_______________|_______",
+        r"|                   | |o;    `' -.o`'=._``  '' ` ' ,__.--o;   |",
+        r"|___________________|_| ;     (#) `-.o `'=.`_.--'_o.-; ;___|___________________",
+        r"____/______/______/___|o;._    '      `'.o|o_.--'    ;o;____/______/______/____",
+        r"/______/______/______/_'=._o--._        ; | ;        ; ;/______/______/______/_",
+        r"____/______/______/______/__'=._o--._   ;o|o;      _._;o;____/______/______/____",
+        r"/______/______/______/______/____'=._o._; | ;_.--'o.--'_/______/______/______/_",
+        r"____/______/______/______/______/_____'=.o|o_.--''___/______/______/______/____",
+        r"/______/______/______/______/______/______/______/______/______/______/______/_",
+        r"*******************************************************************************"
+    ]
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("\n" * 2)
+    for line in poi_art:
+        print(f"{line:^80}")
+        time.sleep(0.1)     
+    time.sleep(0.5)
+    
 
 def new_random_monster():
     """
@@ -49,7 +105,7 @@ def new_random_monster():
         "name": "Troll",
         "description": "A hulking, enraged beast.",
         "health": random.randint(150, 300),
-        "power": random.randint(80, 100),
+        "power": random.randint(50, 70),
         "money": random.randint(100, 150)
     }
     monsters = [monster1, monster2, monster3]
@@ -140,8 +196,8 @@ def sleep(hp, gold):
         (30, 15)
     """
     if gold >= 5:
-        print("\nYou feel refreshed! (HP restored to 30)")
-        return 30, gold - 5
+        print("\nYou feel refreshed! (HP restored to 100)")
+        return 100, gold - 5
     else:
         print("\nYou don't have enough gold to sleep!")
         return hp, gold
@@ -169,8 +225,8 @@ def initialize_game(player_name):
         "player_inventory": [],
         "monsters": [m],
         "pois": [
-            {"x": 3, "y": 3, "type": "chest", "reward": 100, "found": False},
-            {"x": 7, "y": 2, "type": "shrine", "reward": 20, "found": False}
+            {"x": 3, "y": 3, "type": "treasure", "reward": 100, "found": False},
+            {"x": 7, "y": 2, "type": "health_pot", "reward": 20, "found": False}
         ],
         "map_state": {
             "player_pos": [0, 0],
@@ -272,7 +328,7 @@ def fight_monster(state):
 
     m_hp = monster['health']
     while state["player_hp"] > 0 and m_hp > 0:
-        base_damage = 20
+        base_damage = 50
         equipped_weapon = next((i for i in state["player_inventory"] if i.get("equipped") and i["type"] == "weapon"), None)
         current_damage = base_damage + (equipped_weapon["damage_boost"] if equipped_weapon else 0)
 
@@ -414,7 +470,10 @@ def run_map_interface(state):
         direction = {"w": "up", "s": "down", "a": "left", "d": "right"}.get(move_input)
         if direction:
             move_player(state, direction)
+            handle_poi(state)
             p_pos = tuple(state["map_state"]["player_pos"])
+
+            poi_coords = [(p["x"], p["y"]) for p in state["pois"] if not p["found"]]
             
             for m in monsters[:]:
                 if (m.x, m.y) == p_pos:
@@ -424,7 +483,7 @@ def run_map_interface(state):
             town_pos = tuple(state["map_state"]["town_pos"])
             for m in monsters:
                 occupied = [(other.x, other.y) for other in monsters if other != m]
-                forbidden = [p_pos, town_pos]
+                forbidden = [p_pos, town_pos] + poi_coords
                 m.move(occupied, forbidden, 10, 10)
                 if (m.x, m.y) == p_pos:
                     fight_monster(state)
@@ -460,12 +519,14 @@ def handle_poi(state):
         if poi["x"] == p_x and poi["y"] == p_y and not poi["found"]:
             poi["found"] = True # marked so it can't be used again
             
-            if poi["type"] == "chest":
-                print(f"\n[EVENT] You found a chest! Inside is {poi['reward']} gold!")
+            if poi["type"] == "treasure":
+                print_POI_animation()
+                print(f"\n[EVENT] You found a glittering chest! Inside is {poi['reward']} gold!")
                 state["player_gold"] += poi["reward"]
                 
-            elif poi["type"] == "shrine":
-                print(f"\n[EVENT] You pray at a mysterious shrine. You feel a burst of vitality!")
+            elif poi["type"] == "health_pot":
+                print_POI_animation()
+                print(f"\n[EVENT] You found a glowing chest. You drink the potion inside and feel a burst of vitality!")
                 state["player_hp"] += poi["reward"]
                 print(f"Restored {poi['reward']} HP.")
             
