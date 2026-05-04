@@ -148,7 +148,7 @@ def sleep(hp, gold):
 
 def initialize_game(player_name):
     """
-    Initializes the game state dictionary with starting stats and inventory.
+    Initializes the game state dictionary with starting stats, POIs, and inventory.
 
     Parameters:
         player_name (str): The name of the player.
@@ -164,10 +164,14 @@ def initialize_game(player_name):
     m = WanderingMonster.random_spawn([], [(0,0)], 10, 10)
     return {
         "player_name": player_name,
-        "player_hp": 30,
+        "player_hp": 100,
         "player_gold": 500,
         "player_inventory": [],
         "monsters": [m],
+        "pois": [
+            {"x": 3, "y": 3, "type": "chest", "reward": 100, "found": False},
+            {"x": 7, "y": 2, "type": "shrine", "reward": 20, "found": False}
+        ],
         "map_state": {
             "player_pos": [0, 0],
             "town_pos": [0, 0]
@@ -393,10 +397,13 @@ def run_map_interface(state):
         for y in range(10):
             row = ""
             for x in range(10):
+                # unfound POI here?
+                poi_here = next((p for p in state["pois"] if p["x"] == x and p["y"] == y and not p["found"]), None)
                 monster_here = any(m.x == x and m.y == y for m in monsters)
                 if [x, y] == [p_x, p_y]: row += "P "
                 elif [x, y] == state["map_state"]["town_pos"]: row += "T "
                 elif monster_here: row += "M "
+                elif poi_here: row += "? "
                 else: row += ". "
             print(row)
         
@@ -432,6 +439,38 @@ def run_map_interface(state):
             
             if state["player_hp"] <= 0: return "dead"
             if list(p_pos) == state["map_state"]["town_pos"]: return "town"
+
+def handle_poi(state):
+    """
+    Checks if the player is standing on a POI and handles the event.
+
+    Parameters:
+        state (dict): The current game state dictionary.
+
+    Returns:
+        tuple: The "found" status of the POI. True means found.
+
+    Example:
+        >>> handle_poi(state)
+
+    """
+    p_x, p_y = state["map_state"]["player_pos"]
+    
+    for poi in state["pois"]:
+        if poi["x"] == p_x and poi["y"] == p_y and not poi["found"]:
+            poi["found"] = True # marked so it can't be used again
+            
+            if poi["type"] == "chest":
+                print(f"\n[EVENT] You found a chest! Inside is {poi['reward']} gold!")
+                state["player_gold"] += poi["reward"]
+                
+            elif poi["type"] == "shrine":
+                print(f"\n[EVENT] You pray at a mysterious shrine. You feel a burst of vitality!")
+                state["player_hp"] += poi["reward"]
+                print(f"Restored {poi['reward']} HP.")
+            
+            return True
+    return False
 
 # Function tests
 def main():
