@@ -1,7 +1,24 @@
 import random
 
+    """
+    A class representing a monster that moves independently on the game grid.
+    """
+
 class WanderingMonster:
     def __init__(self, x, y, monster_type, color, hp):
+        """
+        Initializes a new WanderingMonster instance.
+
+        Parameters:
+            x (int): The horizontal grid coordinate.
+            y (int): The vertical grid coordinate.
+            monster_type (str): The name/species of the monster.
+            color (list): An RGB list representing the monster's color.
+            hp (int): The current health points of the monster.
+
+        Returns:
+            None
+        """
         self.x = x
         self.y = y
         self.monster_type = monster_type
@@ -10,7 +27,21 @@ class WanderingMonster:
 
     @classmethod
     def random_spawn(cls, occupied, forbidden, grid_w, grid_h):
-        """Finds a random valid coordinate and returns a new monster instance."""
+        """
+        Finds a random valid coordinate and returns a new monster instance.
+
+        Parameters:
+            occupied (list): A list of (x, y) tuples currently holding other monsters.
+            forbidden (list): A list of (x, y) tuples that cannot be entered (e.g., Town).
+            grid_w (int): The total width of the grid.
+            grid_h (int): The total height of the grid.
+
+        Returns:
+            WanderingMonster: A new instance of a monster at a valid location.
+
+        Example:
+            >>> m = WanderingMonster.random_spawn([], [(0,0)], 10, 10)
+        """
         while True:
             rx = random.randint(0, grid_w - 1)
             ry = random.randint(0, grid_h - 1)
@@ -22,7 +53,18 @@ class WanderingMonster:
 
     @classmethod
     def from_dict(cls, data):
-        """Reconstructs the object from a dictionary."""
+        """
+        Reconstructs a monster object from a dictionary (loading games).
+
+        Parameters:
+            data (dict): A dictionary containing monsters.
+
+        Returns:
+            WanderingMonster: A restored monster instance.
+
+        Example:
+            >>> m = WanderingMonster.from_dict({'x': 1, 'y': 2, ...})
+        """
         return cls(
             data['x'], 
             data['y'], 
@@ -32,7 +74,18 @@ class WanderingMonster:
         )
 
     def to_dict(self):
-        """Returns a JSON-serializable dictionary of the monster state."""
+        """
+        Returns a JSON  dictionary of the monster state.
+
+        Parameters:
+            None
+
+        Returns:
+            dict: A dictionary containing all monster attributes.
+
+        Example:
+            >>> data = monster.to_dict()
+        """
         return {
             "x": self.x,
             "y": self.y,
@@ -42,7 +95,22 @@ class WanderingMonster:
         }
 
     def move(self, occupied, forbidden, grid_w, grid_h):
-        """Attempts to move 1 space in a random cardinal direction."""
+        """
+        Attempts to move 1 space in a random direction.
+
+        Parameters:
+            occupied (list): Positions of other monsters to avoid.
+            forbidden (list): Positions you can't move on to.
+            grid_w (int): The horizontal boundary of the map.
+            grid_h (int): The vertical boundary of the map.
+
+        Returns:
+            bool: True if the monster successfully moved, False if it stayed put.
+
+        Example:
+            >>> monster.move([], [(0,0)], 10, 10)
+            True
+        """
         directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
         random.shuffle(directions)
 

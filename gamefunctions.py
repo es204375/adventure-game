@@ -1,17 +1,7 @@
 # gamefunctions.py
 # Elizabeth Sweeney
-# 4/12/26
-# This program implements the two following functions:
-# The first, purchase_item(), takes the cost of an item and the starting
-# amount of money, and optionally the quantity to buy (default is 1). It
-# returns the number of items purchased and the money leftover after.
-# The second, new_random_monster(), picks a random monster from a
-# list of three monsters with the name, description, health, money,
-# and power level (with some variation) for each monster in a dictionary.
-# The third, print_welcome(), prints a welcome message centered in a given width.
-# The fourth, print_shop_menu(), prints an aligned menu with specified 
-# items and prices.
-# Part of a larger project.
+# 5/03/26
+
 
 """A module for managing RPG game mechanics.
 
@@ -443,7 +433,7 @@ def run_map_interface(state):
             if state["player_hp"] <= 0: return "dead"
             if list(p_pos) == state["map_state"]["town_pos"]: return "town"
 
-# function tests
+# Function tests
 def main():
     state = None 
     choice = get_valid_input("1) New Game\n2) Load Game\n> ", ["1", "2"])
